@@ -40,6 +40,26 @@ def create_model(numNodes,embedding_size,order='second'):
 
     return model,{'first':first,'second':second}
 
+class Line:
+    def __init__(self,graph,embedding_size=8,negative_ratio=5,order='second'):
+        self.graph = graph 
+        self.embedding_size = embedding_size
+        self.negative_ratio = negative_ratio
 
+        if order not in ['first','second','third']:
+            raise ValueError('order must be first, second or all')
 
+        self.use_alias = True 
+        self._embeddings = {}
+        self.order = order
+        self.nodes_size = graph.number_of_nodes()
+        self.edge_size = graph.number_of_edges()
+        self.samples_per_epoch = self.edge_size*(1+negative_ratio)
+        self._gen_sampling_table()
+        self.reset_model()
 
+    def _gen_sampling_table(self):
+        pass
+
+    def reset_model(slef):
+        pass 
