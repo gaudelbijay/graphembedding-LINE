@@ -61,11 +61,26 @@ class Line:
 
     def reset_training_config(self, batch_size, times):
         self.batch_size = batch_size
-        self.steps_per_epoch = (
-            (self.samples_per_epoch - 1) // self.batch_size + 1)*times
+        self.steps_per_epoch = ((self.samples_per_epoch - 1) // self.batch_size + 1)*times
+
+    def reset_model(self, opt='adam'):
+        self.model, self.embedding_dict = create_model(self.node_size, self.rep_size, self.order)
+        self.model.compile(opt, line_loss)
+        self.batch_it = self.batch_iter(self.node2idx) 
+
 
     def _gen_sampling_table(self):
-        pass
+        #generating sampling table
+        power = 0.75
+        numNodes = self.nodes_size
+        nodeDegree = np.zeros(numNodes) # To save outdegree 
+        node2idx = self.node2idx
+        for edge in self.graph.edges():
+            nodeDegree[node2idx[edge[0]]] += self.graph[edge[0]][edge[1]].get('weight',1.0)
+        total_sum = sum([math.pow(node_degree[i], power) for i in range(numNodes)])
+        norm_prob = [float(math.pow(node_degree[j], power))/total_sum for j in range(numNodes)]
+        self.node_accept, self.node_alias = create_alias_table(norm_prob)
+
 
 
     def reset_model(slef):
