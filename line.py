@@ -70,7 +70,7 @@ class Line:
 
 
     def _gen_sampling_table(self):
-        #generating sampling table
+        #generating sampling table for vertex
         power = 0.75
         numNodes = self.nodes_size
         nodeDegree = np.zeros(numNodes) # To save outdegree 
