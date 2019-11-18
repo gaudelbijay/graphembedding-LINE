@@ -11,7 +11,7 @@ from utils import preprocess_nxgraph
 from alias import create_alias_table,alias_sample
 
 def line_loss(y_true,y_pred):
-    return k.mean(k.log(k.sigmoid(y_true*y_pred)))
+    return tf.reduce_sum(tf.log_sigmoid(y_true*y_pred))
 
 def create_model(numNodes,embedding_size,order='second'):
     v_i = Input(shape=(1,))
@@ -49,6 +49,7 @@ class Line:
         if order not in ['first','second','third']:
             raise ValueError('order must be first, second or all')
 
+        self.idx2node,self.node2idx = preprocess_nxgraph(graph)
         self.use_alias = True 
         self._embeddings = {}
         self.order = order
@@ -58,8 +59,14 @@ class Line:
         self._gen_sampling_table()
         self.reset_model()
 
+    def reset_training_config(self, batch_size, times):
+        self.batch_size = batch_size
+        self.steps_per_epoch = (
+            (self.samples_per_epoch - 1) // self.batch_size + 1)*times
+
     def _gen_sampling_table(self):
         pass
+
 
     def reset_model(slef):
         pass 
