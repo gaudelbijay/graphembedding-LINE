@@ -83,5 +83,6 @@ class Line:
 
 
 
-    def reset_model(slef):
-        pass 
+        #create sampling table for edge
+        numEdges = self.graph.number_of_edges()
+        
