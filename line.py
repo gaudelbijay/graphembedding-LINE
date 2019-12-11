@@ -85,4 +85,84 @@ class Line:
 
         #create sampling table for edge
         numEdges = self.graph.number_of_edges()
-        
+        total_sum = sum([self.graph[edge[0]][edge[1]].get('weight', 1.0)
+                         for edge in self.graph.edges()])
+        norm_prob = [self.graph[edge[0]][edge[1]].get('weight', 1.0) *
+                     numEdges / total_sum for edge in self.graph.edges()]
+        self.edge_accept, self.edge_alias = create_alias_table(norm_prob)
+    
+    def batch_iter(self, node2idx):
+
+        edges = [(node2idx[x[0]], node2idx[x[1]]) for x in self.graph.edges()]
+
+        data_size = self.graph.number_of_edges()
+        shuffle_indices = np.random.permutation(np.arange(data_size))
+        # positive or negative mod
+        mod = 0
+        mod_size = 1 + self.negative_ratio
+        h = []
+        t = []
+        sign = 0
+        count = 0
+        start_index = 0
+        end_index = min(start_index + self.batch_size, data_size)
+        while True:
+            if mod == 0:
+
+                h = []
+                t = []
+                for i in range(start_index, end_index):
+                    if random.random() >= self.edge_accept[shuffle_indices[i]]:
+                        shuffle_indices[i] = self.edge_alias[shuffle_indices[i]]
+                    cur_h = edges[shuffle_indices[i]][0]
+                    cur_t = edges[shuffle_indices[i]][1]
+                    h.append(cur_h)
+                    t.append(cur_t)
+                sign = np.ones(len(h))
+            else:
+                sign = np.ones(len(h))*-1
+                t = []
+                for i in range(len(h)):
+
+                    t.append(alias_sample(
+                        self.node_accept, self.node_alias))
+
+            if self.order == 'all':
+                yield ([np.array(h), np.array(t)], [sign, sign])
+            else:
+                yield ([np.array(h), np.array(t)], [sign])
+            mod += 1
+            mod %= mod_size
+            if mod == 0:
+                start_index = end_index
+                end_index = min(start_index + self.batch_size, data_size)
+
+            if start_index >= data_size:
+                count += 1
+                mod = 0
+                h = []
+                shuffle_indices = np.random.permutation(np.arange(data_size))
+                start_index = 0
+                end_index = min(start_index + self.batch_size, data_size)
+
+    def get_embeddings(self,):
+        self._embeddings = {}
+        if self.order == 'first':
+            embeddings = self.embedding_dict['first'].get_weights()[0]
+        elif self.order == 'second':
+            embeddings = self.embedding_dict['second'].get_weights()[0]
+        else:
+            embeddings = np.hstack((self.embedding_dict['first'].get_weights()[
+                                   0], self.embedding_dict['second'].get_weights()[0]))
+        idx2node = self.idx2node
+        for i, embedding in enumerate(embeddings):
+            self._embeddings[idx2node[i]] = embedding
+
+        return self._embeddings
+
+    def train(self, batch_size=1024, epochs=1, initial_epoch=0, verbose=1, times=1):
+        self.reset_training_config(batch_size, times)
+        hist = self.model.fit_generator(self.batch_it, epochs=epochs, initial_epoch=initial_epoch, steps_per_epoch=self.steps_per_epoch,
+                                        verbose=verbose)
+
+        return hist
