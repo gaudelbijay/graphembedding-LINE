@@ -6,7 +6,7 @@ def partition_num(num,workers):
 
 def preprocess_nxgraph(graph):
     node2idx = {}
-    idx2node = {}
+    idx2node = []
     for i,node in enumerate(graph.nodes()):
         node2idx[node]=i
         idx2node.append(node)
